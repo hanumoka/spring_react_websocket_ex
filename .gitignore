@@ -1,0 +1,62 @@
+# OS 관련
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE 관련
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 로그 파일
+*.log
+logs/
+
+# 환경설정 파일
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# React Frontend (ReactChatFe) 관련
+ReactChatFe/node_modules/
+ReactChatFe/dist/
+ReactChatFe/build/
+ReactChatFe/.vite/
+ReactChatFe/coverage/
+ReactChatFe/.nyc_output/
+
+# Spring Backend (SpringChatBe) 관련
+SpringChatBe/build/
+SpringChatBe/target/
+SpringChatBe/out/
+SpringChatBe/.gradle/
+SpringChatBe/gradle-app.setting
+SpringChatBe/!gradle-wrapper.jar
+SpringChatBe/.gradletasknamecache
+SpringChatBe/bin/
+
+# Java 관련
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# Docker 관련
+docker/data/
+docker/logs/
+
+# 기타
+temp/
+tmp/
+*.tmp
