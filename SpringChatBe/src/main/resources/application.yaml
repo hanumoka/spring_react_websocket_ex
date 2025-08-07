@@ -1,1 +1,18 @@
-spring.application.name=SpringChatBe
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:53306/chatserver?useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
+  jpa:
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+    generate-ddl: true
+    hibernate:
+      ddl-auto: create
+
+
+jwt:
+  secretKey: Y2hhdHNlcnZlcnNlY3JldGNoYXRzZXJ2ZXJzZWNyZXRjaGF0c2VydmVyc2VjcmV0Y2hhdHNlcnZlcnNlY3JldGNoYXRzZXJ2ZXJzZWNyZXRjaGF0c2VydmVyc2VjcmV0 #chatserversecretchatserversecretchatserversecretchatserversecretchatserversecretchatserversecret
+  expiratoin: 3000 # 5 minutes
