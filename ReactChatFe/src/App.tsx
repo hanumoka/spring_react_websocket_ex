@@ -8,6 +8,7 @@ import Register from "./components/Register";
 import MemberList from "./components/MemberList";
 import ChatRoomList from "./components/ChatRoomList";
 import ChatService from "./components/ChatService";
+import BasicWebSocketChat from "./components/BasicWebSocketChat";
 import Layout from "./components/Layout.tsx";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="members" element={<MemberList />} />
           <Route path="chatrooms" element={<ChatRoomList />} />
           <Route path="chat" element={<ChatService />} />
+          <Route path="basic-websocket-chat" element={<BasicWebSocketChat />} />
         </Route>
         {/* 인증 관련 페이지는 Layout 없이 독립적으로 렌더링 */}
         <Route path="/login" element={<Login />} />
