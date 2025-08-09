@@ -2,6 +2,7 @@ package com.example.springchatbe.member.service;
 
 import com.example.springchatbe.member.domain.Member;
 import com.example.springchatbe.member.domain.ROLE;
+import com.example.springchatbe.member.dto.MemberListResDto;
 import com.example.springchatbe.member.dto.MemberLoginReqDto;
 import com.example.springchatbe.member.dto.MemberSaveReqDto;
 import com.example.springchatbe.member.repository.MemberRepository;
@@ -9,6 +10,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Transactional
 @Service
@@ -52,5 +55,12 @@ public class MemberService {
         // 로그인 성공 시, JWT 토큰 생성 로직 추가 필요
         // 현재는 단순히 Member 객체를 반환
         return member;
+    }
+
+    public List<MemberListResDto> findAll() {
+        List<Member> members = memberRepository.findAll();
+        return members.stream()
+                .map(member -> new MemberListResDto(member.getId(), member.getName(), member.getEmail()))
+                .toList();
     }
 }
