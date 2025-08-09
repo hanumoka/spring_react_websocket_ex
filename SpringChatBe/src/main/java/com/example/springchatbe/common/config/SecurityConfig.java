@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // csrf 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)  // HTTP Basic 비활성화
                 .authorizeHttpRequests( a ->
-                        a.requestMatchers("/members/create", "/members/doLogin")
+                        a.requestMatchers("/members/create", "/members/doLogin", "/ws/**")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated())
@@ -48,6 +48,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+//        corsConfiguration.setAllowedOrigins(List.of("*"));
         corsConfiguration.setAllowedMethods(List.of("*"));
         corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setAllowCredentials(true);  // 자격증명 허용
