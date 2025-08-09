@@ -3,10 +3,10 @@ import Header from "./Header";
 
 function Layout() {
   return (
-    <div>
-      <Header /> {/* 고정 헤더 */}
-      <main>
-        <Outlet /> {/* 여기에 각 페이지 컴포넌트가 렌더링 */}
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Outlet />
       </main>
     </div>
   );
