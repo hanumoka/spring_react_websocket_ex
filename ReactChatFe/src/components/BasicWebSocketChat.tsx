@@ -23,6 +23,25 @@ const BasicWebSocketChat = () => {
     scrollToBottom();
   }, [messages]);
 
+  // 창/탭 닫을 때 WebSocket 연결 정리
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (socket && isConnected) {
+        socket.close();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    
+    // 컴포넌트 언마운트 시 연결 정리
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      if (socket && isConnected) {
+        socket.close();
+      }
+    };
+  }, [socket, isConnected]);
+
   const connectToWebSocket = () => {
     if (!username.trim()) {
       toast.error("사용자명을 입력해주세요.");
