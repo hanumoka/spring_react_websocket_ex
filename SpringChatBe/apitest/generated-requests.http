@@ -1,0 +1,49 @@
+###
+POST http://localhost:8080/members/create
+Content-Type: application/json
+
+{
+  "name": "test",
+  "email": "test@test",
+  "password": "test1234"
+}
+
+<> 2025-08-09T101721.201.json
+<> 2025-08-07T211619.201.json
+<> 2025-08-07T211349.201.json
+<> 2025-08-07T202447.201.json
+
+###
+POST http://localhost:8080/members/doLogin
+Content-Type: application/json
+
+{
+  "email": "test@test",
+  "password": "test1234"
+}
+> {%
+    // 응답에서 토큰 추출하여 환경변수에 저장
+    if (response.status === 200) {
+        const token = response.body.token;
+        client.global.set("authToken", token);
+        console.log("Token saved: " + token);
+    }
+%}
+
+<> 2025-08-09T102932.200.json
+<> 2025-08-09T102212.200.json
+<> 2025-08-09T101724.200.json
+<> 2025-08-07T211620.200.json
+
+###
+GET http://localhost:8080/members/list
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+<> 2025-08-09T102939.200.json
+<> 2025-08-09T102634.200.json
+<> 2025-08-09T102239.401.json
+<> 2025-08-09T102114.401.json
+<> 2025-08-09T102054.401.json
+<> 2025-08-09T102047.401.json
+<> 2025-08-09T101826.401.json
