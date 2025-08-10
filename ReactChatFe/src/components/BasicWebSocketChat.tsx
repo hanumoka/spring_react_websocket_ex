@@ -32,7 +32,7 @@ const BasicWebSocketChat = () => {
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-    
+
     // 컴포넌트 언마운트 시 연결 정리
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -50,34 +50,34 @@ const BasicWebSocketChat = () => {
 
     try {
       const ws = new WebSocket("ws://localhost:8080/ws/connect");
-      
+
       ws.onopen = () => {
         console.log("WebSocket 연결됨");
         setIsConnected(true);
         setSocket(ws);
         toast.success("채팅방에 연결되었습니다!");
-        
+
         // 연결 후 입장 메시지 전송
         const joinMessage = {
           message: `${username}님이 입장했습니다.`,
           timestamp: new Date().toISOString(),
-          sender: "system"
+          sender: "system",
         };
-        setMessages(prev => [...prev, joinMessage]);
+        setMessages((prev) => [...prev, joinMessage]);
       };
 
       ws.onmessage = (event) => {
         try {
           const messageData = JSON.parse(event.data);
-          setMessages(prev => [...prev, messageData]);
+          setMessages((prev) => [...prev, messageData]);
         } catch (error) {
           // JSON이 아닌 경우 단순 텍스트로 처리
           const messageData: ChatMessage = {
             message: event.data,
             timestamp: new Date().toISOString(),
-            sender: "unknown"
+            sender: "unknown",
           };
-          setMessages(prev => [...prev, messageData]);
+          setMessages((prev) => [...prev, messageData]);
         }
       };
 
@@ -92,7 +92,6 @@ const BasicWebSocketChat = () => {
         console.error("WebSocket 오류:", error);
         toast.error("연결 중 오류가 발생했습니다.");
       };
-
     } catch (error) {
       console.error("WebSocket 연결 실패:", error);
       toast.error("WebSocket 연결에 실패했습니다.");
@@ -124,14 +123,14 @@ const BasicWebSocketChat = () => {
       const messageData: ChatMessage = {
         message: inputMessage,
         timestamp: new Date().toISOString(),
-        sender: username
+        sender: username,
       };
 
       // WebSocket으로 메시지 전송
       socket.send(JSON.stringify(messageData));
-      
+
       // 내가 보낸 메시지를 화면에 추가
-      setMessages(prev => [...prev, { ...messageData, sender: "me" }]);
+      setMessages((prev) => [...prev, { ...messageData, sender: "me" }]);
       setInputMessage("");
     } catch (error) {
       console.error("메시지 전송 실패:", error);
@@ -151,10 +150,14 @@ const BasicWebSocketChat = () => {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold text-gray-900">기본 WebSocket 채팅</h1>
         <div className="flex items-center space-x-2">
-          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
-            {isConnected ? '연결됨' : '연결 안됨'}
+          <span
+            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+              isConnected
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {isConnected ? "연결됨" : "연결 안됨"}
           </span>
         </div>
       </div>
@@ -171,7 +174,7 @@ const BasicWebSocketChat = () => {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="사용자명을 입력하세요"
               className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyPress={(e) => e.key === 'Enter' && connectToWebSocket()}
+              onKeyPress={(e) => e.key === "Enter" && connectToWebSocket()}
             />
           </div>
           <button
@@ -203,8 +206,8 @@ const BasicWebSocketChat = () => {
                         msg.sender === "me"
                           ? "bg-blue-600 text-white"
                           : msg.sender === "system"
-                          ? "bg-gray-300 text-gray-700 text-sm"
-                          : "bg-white border border-gray-300 text-gray-900"
+                            ? "bg-gray-300 text-gray-700 text-sm"
+                            : "bg-white border border-gray-300 text-gray-900"
                       }`}
                     >
                       {msg.sender !== "me" && msg.sender !== "system" && (
@@ -213,9 +216,13 @@ const BasicWebSocketChat = () => {
                         </div>
                       )}
                       <div className="break-words">{msg.message}</div>
-                      <div className={`text-xs mt-1 ${
-                        msg.sender === "me" ? "text-blue-100" : "text-gray-400"
-                      }`}>
+                      <div
+                        className={`text-xs mt-1 ${
+                          msg.sender === "me"
+                            ? "text-blue-100"
+                            : "text-gray-400"
+                        }`}
+                      >
                         {new Date(msg.timestamp).toLocaleTimeString()}
                       </div>
                     </div>
