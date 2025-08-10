@@ -18,8 +18,10 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws/stomp")
-                .setAllowedOrigins("**") // Allow all origins for development; adjust for production
-                .withSockJS(); // ws://가 아닌 http://로 연결할 수 있도록 SockJS를 사용 (frontend에서도 sockjs-client 사용)
+                .setAllowedOriginPatterns("http://localhost:*") // 개발 환경에서 유연한 포트 허용
+                .setAllowedOrigins("http://localhost:3000", "http://localhost:5173") // React 개발 서버 포트들
+                .withSockJS() // ws://가 아닌 http://로 연결할 수 있도록 SockJS를 사용 (frontend에서도 sockjs-client 사용)
+                .setSessionCookieNeeded(false); // 세션 쿠키 불필요
     }
 
     /**

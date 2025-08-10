@@ -120,6 +120,16 @@ const Sidebar = () => {
               </svg>
               기본websocket채팅
             </Link>
+            
+            <Link
+              to="/basic-stomp-chat"
+              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            >
+              <svg className="mr-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z" />
+              </svg>
+              기본stomp채팅
+            </Link>
           </nav>
         </div>
 

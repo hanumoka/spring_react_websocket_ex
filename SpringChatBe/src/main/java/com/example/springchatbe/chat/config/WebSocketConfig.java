@@ -28,7 +28,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         // connect url로 websocket 연결요청이 들어오면, 헨들러 클래스가 처리
         registry.addHandler(simpleWebSocketHandler, "/ws/connect")
-                .setAllowedOrigins("*"); // CORS 설정, 모든 도메인 허용
+                .setAllowedOrigins("http://localhost:3000", "http://localhost:5173"); // STOMP와 동일한 CORS 설정
     }
 
 }

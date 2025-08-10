@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // csrf 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)  // HTTP Basic 비활성화
                 .authorizeHttpRequests( a ->
-                        a.requestMatchers("/members/create", "/members/doLogin", "/ws/**")
+                        a.requestMatchers("/members/create", "/members/doLogin", "/ws/connect", "/ws/stomp/**")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated())
