@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
+import { useAuthStore } from "../stores/authStore";
 
 interface ChatMessage {
   message: string;
@@ -10,6 +11,7 @@ interface ChatMessage {
 }
 
 const BasicStompChat = () => {
+  const { token, isLoggedIn } = useAuthStore();
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
@@ -17,6 +19,8 @@ const BasicStompChat = () => {
   const [username, setUsername] = useState("");
   const [roomId, setRoomId] = useState("room1");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const maxReconnectAttempts = 3;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,6 +29,99 @@ const BasicStompChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 영구적 오류와 일시적 오류를 구분하는 함수
+  const isPermanentError = (frame: { headers?: Record<string, string> }): boolean => {
+    const errorCode = frame.headers?.["error-code"];
+    const errorMessage = frame.headers?.["message"] || "";
+
+    // 영구적 오류 유형들
+    const permanentErrorCodes = ["UNAUTHORIZED", "FORBIDDEN", "BAD_REQUEST"];
+    const permanentErrorMessages = [
+      "authentication",
+      "authorization",
+      "invalid token",
+      "access denied",
+    ];
+
+    return (
+      permanentErrorCodes.includes(errorCode) ||
+      permanentErrorMessages.some((msg) =>
+        errorMessage.toLowerCase().includes(msg.toLowerCase())
+      )
+    );
+  };
+
+  // 오류 타입별 사용자 피드백 처리
+  const handleStompError = (frame: { headers?: Record<string, string> }, client: Client) => {
+    console.error("STOMP 오류:", frame);
+    console.log("STOMP 오류 헤더:", frame.headers);
+
+    const errorMessage = frame.headers?.["message"] || "";
+
+    // 서버에서 오는 일반적인 오류 메시지 패턴 확인
+    const isAuthError =
+      errorMessage.toLowerCase().includes("authentication") ||
+      errorMessage.toLowerCase().includes("unauthorized") ||
+      errorMessage.toLowerCase().includes("token") ||
+      errorMessage.toLowerCase().includes("login");
+
+    const isForbiddenError =
+      errorMessage.toLowerCase().includes("forbidden") ||
+      errorMessage.toLowerCase().includes("access denied") ||
+      errorMessage.toLowerCase().includes("permission");
+
+    // 현재 받은 오류는 서버 내부 오류일 가능성이 높으므로 영구적 오류로 처리
+    const isServerError =
+      errorMessage.includes("ExecutorSubscribableChannel") ||
+      errorMessage.includes("Failed to send message");
+
+    if (
+      isPermanentError(frame) ||
+      isAuthError ||
+      isForbiddenError ||
+      isServerError
+    ) {
+      // 영구적 오류 - 재연결 중단
+      client.reconnectDelay = 0;
+      client.deactivate();
+      setIsConnected(false);
+      setStompClient(null);
+      setReconnectAttempts(0);
+
+      if (isAuthError) {
+        toast.error("인증이 실패했습니다. 다시 로그인해주세요.");
+        // 토큰 만료 시 로그아웃 처리
+        const { logout } = useAuthStore.getState();
+        logout();
+      } else if (isForbiddenError) {
+        toast.error("접근 권한이 없습니다. 관리자에게 문의하세요.");
+      } else if (isServerError) {
+        toast.error("서버 설정 오류입니다. 관리자에게 문의하세요.");
+      } else {
+        toast.error("연결이 거부되었습니다. 설정을 확인해주세요.");
+      }
+    } else {
+      // 일시적 오류 - 제한된 재시도
+      const currentAttempts = reconnectAttempts + 1;
+      setReconnectAttempts(currentAttempts);
+
+      if (currentAttempts >= maxReconnectAttempts) {
+        client.reconnectDelay = 0;
+        client.deactivate();
+        setIsConnected(false);
+        setStompClient(null);
+        setReconnectAttempts(0);
+        toast.error(
+          `연결 시도 횟수(${maxReconnectAttempts}회)를 초과했습니다. 잠시 후 다시 시도해주세요.`
+        );
+      } else {
+        toast.error(
+          `연결에 실패했습니다. 재시도 중... (${currentAttempts}/${maxReconnectAttempts})`
+        );
+      }
+    }
+  };
 
   // 창/탭 닫을 때 STOMP 연결 정리
   useEffect(() => {
@@ -48,6 +145,11 @@ const BasicStompChat = () => {
   }, [stompClient, isConnected]);
 
   const connectToStompServer = () => {
+    if (!isLoggedIn || !token) {
+      toast.error("로그인이 필요합니다.");
+      return;
+    }
+
     if (!username.trim()) {
       toast.error("사용자명을 입력해주세요.");
       return;
@@ -64,12 +166,15 @@ const BasicStompChat = () => {
         webSocketFactory: () => {
           console.log("🔗 SockJS 연결 시도 중...");
           const sockjs = new SockJS("http://localhost:8080/ws/stomp");
-          
+
           sockjs.onopen = () => console.log("✅ SockJS 연결 성공");
           sockjs.onclose = (e) => console.log("❌ SockJS 연결 종료:", e);
           sockjs.onerror = (e) => console.error("🚨 SockJS 오류:", e);
-          
+
           return sockjs;
+        },
+        connectHeaders: {
+          Authorization: `Bearer ${token}`,
         },
         debug: (str) => {
           console.log("📨 STOMP Debug:", str);
@@ -81,6 +186,7 @@ const BasicStompChat = () => {
           console.log("STOMP 연결 성공:", frame);
           setIsConnected(true);
           setStompClient(client);
+          setReconnectAttempts(0); // 성공 시 재연결 카운터 리셋
           toast.success(`채팅방 '${roomId}'에 연결되었습니다!`);
 
           // 채팅방 구독
@@ -114,10 +220,7 @@ const BasicStompChat = () => {
           setMessages((prev) => [...prev, joinMessage]);
         },
         onStompError: (frame) => {
-          console.error("STOMP 연결 오류:", frame);
-          toast.error("채팅방 연결에 실패했습니다.");
-          setIsConnected(false);
-          setStompClient(null);
+          handleStompError(frame, client);
         },
         onWebSocketError: (error) => {
           console.error("WebSocket 오류:", error);
