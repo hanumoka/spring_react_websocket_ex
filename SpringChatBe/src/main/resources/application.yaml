@@ -20,4 +20,4 @@ logging:
 
 jwt:
   secretKey: Y2hhdHNlcnZlcnNlY3JldGNoYXRzZXJ2ZXJzZWNyZXRjaGF0c2VydmVyc2VjcmV0Y2hhdHNlcnZlcnNlY3JldGNoYXRzZXJ2ZXJzZWNyZXRjaGF0c2VydmVyc2VjcmV0 #chatserversecretchatserversecretchatserversecretchatserversecretchatserversecretchatserversecret
-  expiratoin: 3000 # 5 minutes
+  expiration: 3000 # 5 minutes

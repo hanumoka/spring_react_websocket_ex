@@ -19,7 +19,7 @@ public class JwtTokenProvider {
 
     public JwtTokenProvider(
             @Value("${jwt.secretKey}") String secretKey,
-            @Value("${jwt.expiratoin}") int expiration) {
+            @Value("${jwt.expiration}") int expiration) {
         this.secretKey = secretKey;
         this.expiration = expiration;
         this.SECRET_KEY = new SecretKeySpec(

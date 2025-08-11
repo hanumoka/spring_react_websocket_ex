@@ -45,7 +45,7 @@ const BasicStompChat = () => {
     ];
 
     return (
-      permanentErrorCodes.includes(errorCode) ||
+      (errorCode && permanentErrorCodes.includes(errorCode)) ||
       permanentErrorMessages.some((msg) =>
         errorMessage.toLowerCase().includes(msg.toLowerCase())
       )

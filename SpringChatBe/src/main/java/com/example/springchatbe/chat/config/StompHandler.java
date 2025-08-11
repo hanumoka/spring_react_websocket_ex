@@ -3,6 +3,7 @@ package com.example.springchatbe.chat.config;
 
 import com.example.springchatbe.common.BizRuntimeException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -42,23 +43,29 @@ public class StompHandler implements ChannelInterceptor {
             log.info("stomp connect 요청시 토큰 유효성 검증");
             String bearerToken = accessor.getFirstNativeHeader("Authorization");
 
-            if(bearerToken == null || !bearerToken.startsWith("Bearer ")) {
+            if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
                 log.error("Authorization 헤더가 없거나 Bearer 형식이 아닙니다.");
                 throw new BizRuntimeException("UNAUTHORIZED", "Invalid authentication token");
             }
 
             String jwtToken = bearerToken.substring(7);
 
-            // 토큰 유효성 검증 로직 추가
-            byte[] keyBytes = Base64.getDecoder().decode(secretKey);
-            SecretKey key = Keys.hmacShaKeyFor(keyBytes);
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(jwtToken)
-                    .getBody();
+            try {
+                // 토큰 유효성 검증 로직 추가
+                byte[] keyBytes = Base64.getDecoder().decode(secretKey);
+                SecretKey key = Keys.hmacShaKeyFor(keyBytes);
+                Claims claims = Jwts.parserBuilder()
+                        .setSigningKey(key)
+                        .build()
+                        .parseClaimsJws(jwtToken)
+                        .getBody();
 
-            log.info("토큰 유효성 검증 성공, 사용자 ID: {}", claims.getSubject());
+                log.info("토큰 유효성 검증 성공, 사용자 ID: {}", claims.getSubject());
+            } catch (Exception e) {
+                throw new BizRuntimeException("UNAUTHORIZED", "Invalid authentication token");
+            } //catch
+
+
         } //if
 
         return message;
