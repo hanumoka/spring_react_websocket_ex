@@ -1,23 +1,28 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import { useAuthStore } from "../stores/authStore";
+import type { ChatMessageDto } from "../types/api";
+import { getUserEmailFromToken } from "../utils/jwtUtils";
 
-interface ChatMessage {
-  message: string;
-  timestamp: string;
-  sender?: string;
+interface ChatMessage extends ChatMessageDto {
+  sender: string; // sender를 필수로 만들고, 화면 표시용 추가 속성 확장 가능
 }
 
 const BasicStompChat = () => {
   const { token, isLoggedIn } = useAuthStore();
+  const location = useLocation();
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isConnected, setIsConnected] = useState(false);
-  const [username, setUsername] = useState("");
   const [roomId, setRoomId] = useState("room1");
+  const subscriptionRef = useRef<any>(null);
+
+  // JWT 토큰에서 사용자 이메일(사용자명) 추출
+  const username = token ? getUserEmailFromToken(token) : null;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const maxReconnectAttempts = 3;
@@ -31,7 +36,9 @@ const BasicStompChat = () => {
   }, [messages]);
 
   // 영구적 오류와 일시적 오류를 구분하는 함수
-  const isPermanentError = (frame: { headers?: Record<string, string> }): boolean => {
+  const isPermanentError = (frame: {
+    headers?: Record<string, string>;
+  }): boolean => {
     const errorCode = frame.headers?.["error-code"];
     const errorMessage = frame.headers?.["message"] || "";
 
@@ -53,7 +60,10 @@ const BasicStompChat = () => {
   };
 
   // 오류 타입별 사용자 피드백 처리
-  const handleStompError = (frame: { headers?: Record<string, string> }, client: Client) => {
+  const handleStompError = (
+    frame: { headers?: Record<string, string> },
+    client: Client
+  ) => {
     console.error("STOMP 오류:", frame);
     console.log("STOMP 오류 헤더:", frame.headers);
 
@@ -123,13 +133,23 @@ const BasicStompChat = () => {
     }
   };
 
-  // 창/탭 닫을 때 STOMP 연결 정리
+  // STOMP 연결 정리 함수
+  const cleanupConnection = (reason: string) => {
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+      console.log(`구독 취소됨 (${reason})`);
+    }
+    if (stompClient && isConnected) {
+      stompClient.deactivate();
+      console.log(`STOMP 연결 해제됨 (${reason})`);
+    }
+  };
+
+  // 창/탭 닫을 때 및 페이지 이동 시 STOMP 연결 정리
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (stompClient && isConnected) {
-        stompClient.deactivate();
-        console.log("STOMP 연결 해제됨");
-      }
+      cleanupConnection("beforeunload");
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -137,12 +157,16 @@ const BasicStompChat = () => {
     // 컴포넌트 언마운트 시 연결 정리
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      if (stompClient && isConnected) {
-        stompClient.deactivate();
-        console.log("컴포넌트 언마운트로 인한 STOMP 연결 해제");
-      }
+      cleanupConnection("컴포넌트 언마운트");
     };
   }, [stompClient, isConnected]);
+
+  // 라우트 변경 시 STOMP 연결 정리
+  useEffect(() => {
+    return () => {
+      cleanupConnection("라우트 변경");
+    };
+  }, [location.pathname]);
 
   const connectToStompServer = () => {
     if (!isLoggedIn || !token) {
@@ -150,8 +174,8 @@ const BasicStompChat = () => {
       return;
     }
 
-    if (!username.trim()) {
-      toast.error("사용자명을 입력해주세요.");
+    if (!username) {
+      toast.error("사용자 정보를 가져올 수 없습니다. 다시 로그인해주세요.");
       return;
     }
 
@@ -190,9 +214,9 @@ const BasicStompChat = () => {
           toast.success(`채팅방 '${roomId}'에 연결되었습니다!`);
 
           // 채팅방 구독
-          client.subscribe(`/topic/${roomId}`, (message) => {
+          subscriptionRef.current = client.subscribe(`/topic/${roomId}`, (message) => {
             try {
-              const receivedMessage = JSON.parse(message.body);
+              const receivedMessage: ChatMessage = JSON.parse(message.body);
               console.log("메시지 수신:", receivedMessage);
 
               // 받은 메시지를 화면에 추가 (내가 보낸 메시지가 아닌 경우)
@@ -211,8 +235,8 @@ const BasicStompChat = () => {
             }
           });
 
-          // 입장 메시지 전송
-          const joinMessage = {
+          // 입장 메시지 전송 (로컬 표시용)
+          const joinMessage: ChatMessage = {
             message: `${username}님이 입장했습니다.`,
             timestamp: new Date().toISOString(),
             sender: "system",
@@ -237,14 +261,11 @@ const BasicStompChat = () => {
   };
 
   const disconnectFromStompServer = () => {
-    if (stompClient) {
-      stompClient.deactivate();
-      console.log("STOMP 연결 해제됨");
-      setStompClient(null);
-      setIsConnected(false);
-      setMessages([]);
-      toast.success("채팅방에서 나갔습니다.");
-    }
+    cleanupConnection("수동 연결 해제");
+    setStompClient(null);
+    setIsConnected(false);
+    setMessages([]);
+    toast.success("채팅방에서 나갔습니다.");
   };
 
   const sendMessage = () => {
@@ -259,20 +280,22 @@ const BasicStompChat = () => {
     }
 
     try {
-      const messageData: ChatMessage = {
+      // 백엔드 DTO 형식에 맞춘 메시지 데이터
+      const chatMessageDto: ChatMessageDto = {
         message: inputMessage,
-        timestamp: new Date().toISOString(),
         sender: username,
+        timestamp: new Date().toISOString(),
       };
 
-      // STOMP로 메시지 발행
+      // STOMP로 메시지 발행 (백엔드 ChatMessageReqDto 형식)
       stompClient.publish({
         destination: `/publish/${roomId}`,
-        body: JSON.stringify(messageData),
+        body: JSON.stringify(chatMessageDto),
       });
 
-      // 내가 보낸 메시지를 화면에 추가
-      setMessages((prev) => [...prev, { ...messageData, sender: "me" }]);
+      // 내가 보낸 메시지를 화면에 추가 (표시용)
+      const displayMessage: ChatMessage = { ...chatMessageDto, sender: "me" };
+      setMessages((prev) => [...prev, displayMessage]);
       setInputMessage("");
     } catch (error) {
       console.error("메시지 전송 실패:", error);
@@ -311,21 +334,13 @@ const BasicStompChat = () => {
 
       {!isConnected ? (
         <div className="text-center py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 max-w-lg mx-auto">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                사용자명
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="사용자명을 입력하세요"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyPress={(e) => e.key === "Enter" && connectToStompServer()}
-              />
+          <div className="mb-6">
+            <div className="text-sm text-gray-600 mb-4">
+              <p>
+                <strong>사용자:</strong> {username || "로그인 정보 없음"}
+              </p>
             </div>
-            <div>
+            <div className="max-w-md mx-auto">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 채팅방 ID
               </label>
@@ -341,13 +356,18 @@ const BasicStompChat = () => {
           </div>
           <button
             onClick={connectToStompServer}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors"
+            disabled={!username}
+            className={`px-6 py-2 rounded font-medium transition-colors ${
+              username
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           >
             채팅방 입장
           </button>
           <div className="mt-4 text-sm text-gray-500">
             <p>STOMP 프로토콜을 사용한 실시간 채팅</p>
-            <p>같은 채팅방 ID로 입장한 사용자들과 채팅할 수 있습니다</p>
+            <p>로그인한 사용자만 채팅에 참여할 수 있습니다</p>
           </div>
         </div>
       ) : (

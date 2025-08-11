@@ -27,6 +27,13 @@ export interface MemberListResDto {
   email: string;
 }
 
+// 채팅 메시지 요청/응답 타입 (백엔드 ChatMessageReqDto와 일치)
+export interface ChatMessageDto {
+  message: string;
+  sender: string;
+  timestamp: string; // LocalDateTime는 ISO string으로 변환
+}
+
 // API 응답 타입
 export interface ApiResponse<T> {
   data: T;

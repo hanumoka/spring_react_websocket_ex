@@ -3,7 +3,6 @@ package com.example.springchatbe.chat.config;
 
 import com.example.springchatbe.common.BizRuntimeException;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
